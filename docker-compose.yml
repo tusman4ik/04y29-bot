@@ -1,0 +1,7 @@
+services:
+  04y29-bot:
+    build: .
+    container_name: instance
+    env_file: .env
+    volumes: 
+      - ./data:/app/data  
