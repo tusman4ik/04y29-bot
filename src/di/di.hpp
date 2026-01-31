@@ -1,18 +1,18 @@
 #pragma once
 
 #include <functional>
-#include <iostream>
 #include <map>
 #include <memory>
 #include <stdexcept>
 #include <string>
 
-namespace di {
+namespace bot {
 
 class DiContainer {
 private:
     std::map<std::string, std::shared_ptr<void>> instances_;
-    std::map<std::string, std::function<std::shared_ptr<void>(DiContainer&)>> factories_;
+    std::map<std::string, std::function<std::shared_ptr<void>(DiContainer&)>>
+        factories_;
 
 public:
     template <typename T>
@@ -40,7 +40,9 @@ public:
     }
 
     template <typename T>
-    void Register(const std::string& name, std::function<std::shared_ptr<void>(DiContainer&)> factory_method) {
+    void Register(const std::string& name,
+                  std::function<std::shared_ptr<void>(DiContainer&)> factory_method) {
+
         if (factories_.find(name) != factories_.end()) {
             throw std::runtime_error("Type with name (" + name + ") already exists");
         }
@@ -48,9 +50,21 @@ public:
     }
 
     template <typename T>
-    void Register(std::function<std::shared_ptr<void>(DiContainer&)> factory_method) {
+    void Register(
+        std::function<std::shared_ptr<void>(DiContainer&)> factory_method) {
         std::string name = typeid(T).name();
         Register<T>(name, factory_method);
+    }
+
+    void RegisterEnv(const std::string& key, const std::string& value) {
+        auto& t = *this;
+        Register<std::string>(key, [&](DiContainer&) {
+            return std::make_shared<std::string>(value);
+        });
+    };
+
+    std::string GetEnv(const std::string& key) {
+        return *Get<std::string>(key);
     }
 };
 
@@ -74,4 +88,4 @@ template <typename T>
 Scoped<T> Scope(DiContainer& c) {
     return Scoped<T>{c.Get<T>()};
 }
-}    // namespace di
+}    // namespace bot
