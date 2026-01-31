@@ -1,13 +1,12 @@
-add_executable(
-    bot
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS *.cpp)
 
-    main.cpp
-    db/migration_manager.cpp
-)
+add_executable(bot ${SOURCES})
 
+target_compile_definitions(bot PRIVATE SPDLOG_FMT_EXTERNAL)
 target_link_libraries(
     bot
     PRIVATE
+    fmt::fmt
     TgBot::TgBot
     SQLiteCpp
     OpenSSL::SSL
@@ -18,4 +17,5 @@ target_link_libraries(
     nlohmann_json::nlohmann_json
 )
 
+include_directories(bot PRIVATE .)
 target_include_directories(bot PRIVATE ${SQLite3_INCLUDE_DIRS})
