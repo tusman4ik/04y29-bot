@@ -12,14 +12,14 @@ struct Env {
 };
 
 Env tokens[] = {{"BOT_TOKEN", false},
-                {"DB_PATH", false},
+                {"DB_PATH", true, "/app/data/data.db"},
                 {"GOOGLE_SHEETS_API_KEY", false},
                 {"SQL_DIR", true, "sql"},
                 {"MIGRATIONS_DIR", true, "migrations"},
                 {"CREATE_VERSION_TABLE", true, "create_version_table.sql"},
                 {"GET_CURRENT_VERSION", true, "get_current_version.sql"},
                 {"INSERT_VERSION_RECORD", true, "insert_version_record.sql"},
-                {"CHECK_MIGRATION_HASH",true,"check_migration_hash.sql"}
+                {"CHECK_MIGRATION_HASH", true, "check_migration_hash.sql"}
 
 };
 

@@ -3,3 +3,4 @@ build/
 .git/
 cmake-3.31.5-linux-x86_64.sh
 sql/
+tests
