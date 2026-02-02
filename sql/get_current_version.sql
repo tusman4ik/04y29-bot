@@ -1,0 +1,1 @@
+SELECT COALESCE(MAX(version), -1) FROM versions_;

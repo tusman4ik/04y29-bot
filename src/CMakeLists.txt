@@ -13,9 +13,10 @@ target_link_libraries(
     OpenSSL::Crypto
     ZLIB::ZLIB
     Threads::Threads
-    ${SQLite3_LIBRARIES}  
+    ${SQLite3_LIBRARIES}
     nlohmann_json::nlohmann_json
 )
+
 
 include_directories(bot PRIVATE .)
 target_include_directories(bot PRIVATE ${SQLite3_INCLUDE_DIRS})

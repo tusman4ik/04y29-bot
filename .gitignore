@@ -43,3 +43,9 @@ build
 
 build
 .env
+todo.md
+
+.devcontainer
+.cache
+.github
+data
