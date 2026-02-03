@@ -9,12 +9,13 @@ enable_testing()
 
 FetchContent_MakeAvailable(googletest)
 
-file(GLOB TEST_FILES CONFIGURE_DEPENDS "*.cpp")
+file(GLOB_RECURSE TEST_FILES CONFIGURE_DEPENDS "*.cpp")
 
 add_executable(ut ${TEST_FILES})
-target_include_directories(ut PRIVATE ../src)
 
 target_link_libraries(ut
+
+    test_objects
     nlohmann_json::nlohmann_json
     GTest::gtest_main
     GTest::gmock

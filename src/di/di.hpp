@@ -11,7 +11,7 @@ namespace bot {
 
 #define GET(di, type) di.Get<type>()
 
-#define GET_ENV(di, name) di.Get<EnvManager>()->Get(name)
+#define GET_ENV(di, name) di.Get<IEnvManager>()->Get(name)
 
 #define REGISTER(di, type, ...) \
     di.Register<type>(          \

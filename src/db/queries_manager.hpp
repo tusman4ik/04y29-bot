@@ -9,10 +9,10 @@ namespace bot {
 
 class IQueriesManager {
 public:
-    virtual std::string Get(const std::string& path);
+    virtual std::string Get(const std::string& path) = 0;
 
     virtual std::vector<std::filesystem::path>
-    ListSubdirFiles(const std::filesystem::path& subdir);
+    ListSubdirFiles(const std::filesystem::path& subdir) = 0;
 
     virtual ~IQueriesManager() = default;
 };

@@ -22,9 +22,10 @@ MigrationConfig::MigrationConfig(const std::shared_ptr<IEnvManager>& env_manager
       insert_version_record(env_manager->Get("INSERT_VERSION_RECORD")),
       check_migration_hash(env_manager->Get("CHECK_MIGRATION_HASH")) {}
 
-MigrationManager::MigrationManager(const std::shared_ptr<SQLite::Database>& db,
-                                   const std::shared_ptr<IQueriesManager>& queries_manager,
-                                   const MigrationConfig& config)
+MigrationManager::MigrationManager(
+    const std::shared_ptr<SQLite::Database>& db,
+    const std::shared_ptr<IQueriesManager>& queries_manager,
+    const MigrationConfig& config)
     : db_(db), queries_manager_(queries_manager), config_(config) {}
 
 void ApplyMigrations(DiContainer& ctx) {
@@ -113,24 +114,6 @@ int32_t MigrationManager::GetCurrentVersion() {
     return db_->execAndGet(queries_manager_->Get(config_.get_current_version));
 }
 
-// std::vector<std::filesystem::path>
-// MigrationManager::GetMissingMigrations(int32_t version) {
-
-//     std::vector<std::filesystem::path> res;
-//     std::vector<std::filesystem::path> all_scripts =
-//         queries_manager_->ListSubdirFiles(config_.migrations_dir);
-
-//     for (const auto& path : all_scripts) {
-//         if (!IsStartWithThreeDigits(path) && GetCurrentVersion() > version) {
-//             spdlog::error("Invalid transaction file = {}", path.string());
-//             throw std::invalid_argument("Invalid transaction file");
-//         }
-
-//         res.push_back(path);
-//     }
-//     return res;
-// }
-
 bool MigrationManager::IsStartWithThreeDigits(const std::filesystem::path& path) {
     std::string str = path.string();
     return str.size() >= 3 && std::isdigit(str[0]) && std::isdigit(str[1]) &&
@@ -146,57 +129,5 @@ int32_t MigrationManager::GetVersion(const std::filesystem::path& path) {
 
     return ((fst * 10) + scd) * 10 + thd;
 }
-
-// namespace {
-
-// std::string ReadFile(std::filesystem::path& path) {
-//     std::ifstream file(path);
-
-//     if (!file) {
-//         return "";
-//     }
-
-//     std::stringstream ss;
-//     ss << file.rdbuf();
-//     return ss.str();
-// }
-
-// bool StartWithThreeDigits(const std::filesystem::directory_entry& entry) {
-//     std::string str = entry.path().string();
-//     return str.size() >= 3 && std::isdigit(str[0]) && std::isdigit(str[1]) &&
-//            std::isdigit(str[2]);
-// }
-
-// bool IsSqlFile(const std::filesystem::directory_entry& entry) {
-//     return entry.is_regular_file() && entry.path().string().ends_with(".sql");
-// }
-
-// int8_t GetMigrationVersion(const std::filesystem::path& path) {
-//     std::string str = path.string();
-
-//     char fst = str[0] - '0';
-//     char scn = str[1] - '0';
-//     char thr = str[2] - '0';
-
-//     return (fst * 10 + scn) * 10 + thr;
-// }
-
-// void RunInitScript(DiContainer& ctx, const std::shared_ptr<SQLite::Database>& db,
-//                    const std::shared_ptr<QueriesManager>& queries_manager) {
-
-//     std::string init_script_path = GET_ENV(ctx, "CREATE_VERSION_TABLE");
-
-//     spdlog::info("Run init script = {}", init_script_path);
-
-//     db->exec(queries_manager->Get(init_script_path));
-// }
-
-// void GetLastVersion() {
-
-// }
-
-// }    // namespace
-
-// }
 
 }    // namespace bot
