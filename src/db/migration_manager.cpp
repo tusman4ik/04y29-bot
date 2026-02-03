@@ -15,39 +15,30 @@
 
 namespace bot {
 
-MigrationConfig::MigrationConfig(const std::shared_ptr<IEnvManager>& env_manager)
-    : create_version_table(env_manager->Get("CREATE_VERSION_TABLE")),
-      get_current_version(env_manager->Get("GET_CURRENT_VERSION")),
-      migrations_dir(env_manager->Get("MIGRATIONS_DIR")),
-      insert_version_record(env_manager->Get("INSERT_VERSION_RECORD")),
-      check_migration_hash(env_manager->Get("CHECK_MIGRATION_HASH")) {}
-
 MigrationManager::MigrationManager(
     const std::shared_ptr<SQLite::Database>& db,
-    const std::shared_ptr<IQueriesManager>& queries_manager,
-    const MigrationConfig& config)
-    : db_(db), queries_manager_(queries_manager), config_(config) {}
+    const std::shared_ptr<IQueriesManager>& queries_manager, const Config config_)
+    : db_(db), queries_manager_(queries_manager), config_(config_) {}
 
 void ApplyMigrations(DiContainer& ctx) {
-    MigrationManager(GET(ctx, SQLite::Database), GET(ctx, IQueriesManager),
-                     MigrationConfig(GET(ctx, IEnvManager)))
+    MigrationManager(GET(ctx, SQLite::Database), GET(ctx, IQueriesManager), Config{})
         .Run();
 }
 
 void MigrationManager::Run() {
     EnsureVersionTable();
     int32_t current_version = GetCurrentVersion();
-    spdlog::debug("Database current version = {}", current_version);
 
     std::vector<std::filesystem::path> migrations =
         queries_manager_->ListSubdirFiles(config_.migrations_dir);
-    ;
-
+    
+    spdlog::debug("Database current version = {}. Migrations amount = {}", current_version, migrations.size());
     std::hash<std::string> hash;
 
     for (const auto& path : migrations) {
-        std::string script =
-            queries_manager_->Get(config_.migrations_dir + '/' + path.string());
+        std::string script = queries_manager_->Get(
+            std::filesystem::path(config_.migrations_dir) / path.string());
+        
         int32_t version = GetVersion(path);
         size_t script_hash = hash(script);
         std::string formated_hash = std::format("{:016x}", script_hash);
