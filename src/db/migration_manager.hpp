@@ -2,7 +2,6 @@
 
 #include "db/queries_manager.hpp"
 #include "di/di.hpp"
-#include "env/env_manager.hpp"
 #include <SQLiteCpp/Database.h>
 #include <SQLiteCpp/SQLiteCpp.h>
 #include <filesystem>
@@ -11,26 +10,23 @@
 
 namespace bot {
 
-struct MigrationConfig {
-    std::string create_version_table;
-    std::string get_current_version;
-    std::string migrations_dir;
-    std::string insert_version_record;
-    std::string check_migration_hash;
-    explicit MigrationConfig(const std::shared_ptr<IEnvManager>& env_manager);
+struct Config {
+    std::string migrations_dir = "migrations";
+    std::string internal_dir = "internal";
+    std::string create_version_table = internal_dir +  "/create_version_table.sql";
+    std::string get_current_version = internal_dir +  "/get_current_version.sql";
+    std::string insert_version_record = internal_dir +  "/insert_version_record.sql";
+    std::string check_migration_hash = internal_dir +  "/check_migration_hash.sql";
 };
 
 class MigrationManager {
 private:
     std::shared_ptr<SQLite::Database> db_;
     std::shared_ptr<IQueriesManager> queries_manager_;
-    MigrationConfig config_;
-
+    Config config_;
 public:
     MigrationManager(const std::shared_ptr<SQLite::Database>& db,
-                     const std::shared_ptr<IQueriesManager>& queries_manager,
-                     const MigrationConfig& config);
-
+                     const std::shared_ptr<IQueriesManager>& queries_manager, const Config config_);
     void Run();
 
 private:

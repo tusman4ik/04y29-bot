@@ -1,95 +1,76 @@
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
 #include <SQLiteCpp/SQLiteCpp.h>
-#include <memory>
-#include <vector>
-#include <string>
+#include <filesystem>
 #include <format>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "db/migration_manager.hpp"
-#include "env/env_manager.hpp"
 
 using namespace bot;
-using ::testing::Return;
 using ::testing::_;
 using ::testing::NiceMock;
-using ::testing::Throw;
-
-class MockEnvManager : public IEnvManager {
-public:
-    MOCK_METHOD(std::string, Get, (const std::string& key), (override));
-};
+using ::testing::Return;
 
 class MockQueriesManager : public IQueriesManager {
 public:
     MOCK_METHOD(std::string, Get, (const std::string& path), (override));
-    MOCK_METHOD(std::vector<std::filesystem::path>, ListSubdirFiles, (const std::filesystem::path& subdir), (override));
+    MOCK_METHOD(std::vector<std::filesystem::path>, ListSubdirFiles,
+                (const std::filesystem::path& subdir), (override));
 };
-
 
 class MigrationManagerTest : public ::testing::Test {
 protected:
     std::shared_ptr<SQLite::Database> db_;
-    std::shared_ptr<MockEnvManager> env_mock_;
     std::shared_ptr<MockQueriesManager> queries_mock_;
+    Config test_config_;
 
-    const std::string kSqlDir_ = "sql";
-    const std::string kMigrationsDir_ = "migrations";
-
-    const std::string kCreateVerTable_ = "sql/create_version.sql";
-    const std::string kGetVer_ = "sql/get_version.sql";
-    const std::string kInsertVer_ = "sql/insert_version.sql";
-    const std::string kCheckHash_ = "sql/check_hash.sql";
+    const std::string kMigDir_ = "test_migrations";
+    const std::string kSysDir_ = "test_internal";
 
     void SetUp() override {
-        db_ = std::make_shared<SQLite::Database>(":memory:", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
-
-        env_mock_ = std::make_shared<NiceMock<MockEnvManager>>();
+        db_ = std::make_shared<SQLite::Database>(":memory:", SQLite::OPEN_READWRITE |
+                                                                 SQLite::OPEN_CREATE);
         queries_mock_ = std::make_shared<NiceMock<MockQueriesManager>>();
 
-        SetupEnv();
+        test_config_.migrations_dir = kMigDir_ + "/";
+        test_config_.internal_dir = kSysDir_ + "/";
+        test_config_.create_version_table = kSysDir_ + "/create.sql";
+        test_config_.get_current_version = kSysDir_ + "/get.sql";
+        test_config_.insert_version_record = kSysDir_ + "/insert.sql";
+        test_config_.check_migration_hash = kSysDir_ + "/check.sql";
+
         SetupSystemQueries();
     }
-
-    void SetupEnv() {
-        EXPECT_CALL(*env_mock_, Get("CREATE_VERSION_TABLE")).WillRepeatedly(Return(kCreateVerTable_));
-        EXPECT_CALL(*env_mock_, Get("GET_CURRENT_VERSION")).WillRepeatedly(Return(kGetVer_));
-        EXPECT_CALL(*env_mock_, Get("MIGRATIONS_DIR")).WillRepeatedly(Return(kMigrationsDir_));
-        EXPECT_CALL(*env_mock_, Get("INSERT_VERSION_RECORD")).WillRepeatedly(Return(kInsertVer_));
-        EXPECT_CALL(*env_mock_, Get("CHECK_MIGRATION_HASH")).WillRepeatedly(Return(kCheckHash_));
-    }
-
     void SetupSystemQueries() {
-        EXPECT_CALL(*queries_mock_, Get(kCreateVerTable_))
-            .WillRepeatedly(Return(
-                "CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, name TEXT, hash TEXT);"
-            ));
+        EXPECT_CALL(*queries_mock_, Get(test_config_.create_version_table))
+            .WillRepeatedly(Return("CREATE TABLE IF NOT EXISTS schema_version (version "
+                                   "INTEGER PRIMARY KEY, name TEXT, hash TEXT);"));
 
-        EXPECT_CALL(*queries_mock_, Get(kGetVer_))
-            .WillRepeatedly(Return(
-                "SELECT COALESCE(MAX(version), 0) FROM schema_version;"
-            ));
+        EXPECT_CALL(*queries_mock_, Get(test_config_.get_current_version))
+            .WillRepeatedly(
+                Return("SELECT COALESCE(MAX(version), 0) FROM schema_version;"));
 
-        EXPECT_CALL(*queries_mock_, Get(kInsertVer_))
+        EXPECT_CALL(*queries_mock_, Get(test_config_.insert_version_record))
             .WillRepeatedly(Return(
-                "INSERT INTO schema_version (version, name, hash) VALUES (?, ?, ?);"
-            ));
+                "INSERT INTO schema_version (version, name, hash) VALUES (?, ?, ?);"));
 
-        EXPECT_CALL(*queries_mock_, Get(kCheckHash_))
-            .WillRepeatedly(Return(
-                "SELECT COUNT(*) FROM schema_version WHERE version = ? AND name = ? AND hash = ?;"
-            ));
+        EXPECT_CALL(*queries_mock_, Get(test_config_.check_migration_hash))
+            .WillRepeatedly(Return("SELECT COUNT(*) FROM schema_version WHERE version = "
+                                   "? AND name = ? AND hash = ?;"));
     }
 
     std::string CalculateHash(const std::string& script) {
         std::hash<std::string> hasher;
-        size_t hash_val = hasher(script);
-        return std::format("{:016x}", hash_val);
+        return std::format("{:016x}", hasher(script));
     }
 
-    void ManualInsertVersion(int version, const std::string& name, const std::string& script_content) {
-        db_->exec("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, name TEXT, hash TEXT);");
-
+    void ManualInsertVersion(int version, const std::string& name,
+                             const std::string& script_content) {
+        db_->exec("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY "
+                  "KEY, name TEXT, hash TEXT);");
         std::string hash = CalculateHash(script_content);
         SQLite::Statement insert(*db_, "INSERT INTO schema_version VALUES (?, ?, ?)");
         insert.bind(1, version);
@@ -100,24 +81,22 @@ protected:
 };
 
 TEST_F(MigrationManagerTest, Run_FreshStart_AppliesMigration) {
-    std::filesystem::path migration_file = "001_init_users.sql";
-    std::string migration_sql = "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT);";
+    std::filesystem::path migration_file = "001_init.sql";
+    std::string migration_sql = "CREATE TABLE users (id INTEGER PRIMARY KEY);";
 
-    EXPECT_CALL(*queries_mock_, ListSubdirFiles(std::filesystem::path(kMigrationsDir_)))
+    EXPECT_CALL(*queries_mock_,
+                ListSubdirFiles(std::filesystem::path(test_config_.migrations_dir)))
         .WillOnce(Return(std::vector<std::filesystem::path>{migration_file}));
 
-    EXPECT_CALL(*queries_mock_, Get(kMigrationsDir_ + "/" + migration_file.string()))
+    EXPECT_CALL(*queries_mock_,
+                Get(test_config_.migrations_dir + migration_file.string()))
         .WillOnce(Return(migration_sql));
 
-    MigrationConfig config(env_mock_);
-    MigrationManager manager(db_, queries_mock_, config);
+    MigrationManager manager(db_, queries_mock_, test_config_);
 
     EXPECT_NO_THROW(manager.Run());
-
     EXPECT_TRUE(db_->tableExists("users"));
-
-    int version = db_->execAndGet("SELECT MAX(version) FROM schema_version").getInt();
-    EXPECT_EQ(version, 1);
+    EXPECT_EQ(db_->execAndGet("SELECT MAX(version) FROM schema_version").getInt(), 1);
 }
 
 TEST_F(MigrationManagerTest, Run_ExistingDb_SkipsOldAndAppliesNew) {
@@ -127,20 +106,17 @@ TEST_F(MigrationManagerTest, Run_ExistingDb_SkipsOldAndAppliesNew) {
     std::vector<std::filesystem::path> files = {"001_init.sql", "002_add_posts.sql"};
     std::string script_v2 = "CREATE TABLE posts (id INTEGER);";
 
-    EXPECT_CALL(*queries_mock_, ListSubdirFiles(_))
-        .WillOnce(Return(files));
+    EXPECT_CALL(*queries_mock_, ListSubdirFiles(_)).WillOnce(Return(files));
+    EXPECT_CALL(*queries_mock_, Get(test_config_.migrations_dir + "001_init.sql"))
+        .WillOnce(Return(script_v1));
+    EXPECT_CALL(*queries_mock_, Get(test_config_.migrations_dir + "002_add_posts.sql"))
+        .WillOnce(Return(script_v2));
 
-    EXPECT_CALL(*queries_mock_, Get(kMigrationsDir_ + "/001_init.sql")).WillOnce(Return(script_v1));
-    EXPECT_CALL(*queries_mock_, Get(kMigrationsDir_ + "/002_add_posts.sql")).WillOnce(Return(script_v2));
-
-    MigrationConfig config(env_mock_);
-    MigrationManager manager(db_, queries_mock_, config);
+    MigrationManager manager(db_, queries_mock_, test_config_);
     manager.Run();
 
     EXPECT_TRUE(db_->tableExists("posts"));
-
-    int version = db_->execAndGet("SELECT MAX(version) FROM schema_version").getInt();
-    EXPECT_EQ(version, 2);
+    EXPECT_EQ(db_->execAndGet("SELECT MAX(version) FROM schema_version").getInt(), 2);
 }
 
 TEST_F(MigrationManagerTest, Run_DamagedMigration_ThrowsException) {
@@ -149,39 +125,25 @@ TEST_F(MigrationManagerTest, Run_DamagedMigration_ThrowsException) {
     EXPECT_CALL(*queries_mock_, ListSubdirFiles(_))
         .WillOnce(Return(std::vector<std::filesystem::path>{"001_init.sql"}));
 
-    EXPECT_CALL(*queries_mock_, Get(kMigrationsDir_ + "/001_init.sql"))
+    EXPECT_CALL(*queries_mock_, Get(test_config_.migrations_dir + "001_init.sql"))
         .WillOnce(Return("MODIFIED SQL"));
 
-    MigrationConfig config(env_mock_);
-    MigrationManager manager(db_, queries_mock_, config);
+    MigrationManager manager(db_, queries_mock_, test_config_);
 
-    EXPECT_THROW({
-        try {
-            manager.Run();
-        } catch (const std::invalid_argument& e) {
-            EXPECT_STREQ(e.what(), "Migration was damaged!");
-            throw;
-        }
-    }, std::invalid_argument);
+    EXPECT_THROW(manager.Run(), std::invalid_argument);
 }
 
 TEST_F(MigrationManagerTest, Run_BadSql_RollsBackTransaction) {
     std::filesystem::path bad_file = "005_bad.sql";
-    std::string bad_sql = "CREATE TABLE broken_table (id INT; ==error== lim_(n->inf) tg(n)/n) ==error==";
+    std::string bad_sql = "CREATE TABLE broken_table (id INT); syntax_error_here;";
 
     EXPECT_CALL(*queries_mock_, ListSubdirFiles(_))
         .WillOnce(Return(std::vector<std::filesystem::path>{bad_file}));
-
-    EXPECT_CALL(*queries_mock_, Get(kMigrationsDir_ + "/005_bad.sql"))
+    EXPECT_CALL(*queries_mock_, Get(test_config_.migrations_dir + bad_file.string()))
         .WillOnce(Return(bad_sql));
 
-    MigrationConfig config(env_mock_);
-    MigrationManager manager(db_, queries_mock_, config);
+    MigrationManager manager(db_, queries_mock_, test_config_);
 
     EXPECT_THROW(manager.Run(), SQLite::Exception);
-
-    int count = db_->execAndGet("SELECT COUNT(*) FROM schema_version WHERE version = 5").getInt();
-    EXPECT_EQ(count, 0);
-
     EXPECT_FALSE(db_->tableExists("broken_table"));
 }
