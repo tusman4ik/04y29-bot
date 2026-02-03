@@ -17,18 +17,18 @@ struct MigrationConfig {
     std::string migrations_dir;
     std::string insert_version_record;
     std::string check_migration_hash;
-    explicit MigrationConfig(const std::shared_ptr<EnvManager>& env_manager);
+    explicit MigrationConfig(const std::shared_ptr<IEnvManager>& env_manager);
 };
 
 class MigrationManager {
 private:
     std::shared_ptr<SQLite::Database> db_;
-    std::shared_ptr<QueriesManager> queries_manager_;
+    std::shared_ptr<IQueriesManager> queries_manager_;
     MigrationConfig config_;
 
 public:
     MigrationManager(const std::shared_ptr<SQLite::Database>& db,
-                     const std::shared_ptr<QueriesManager>& queries_manager,
+                     const std::shared_ptr<IQueriesManager>& queries_manager,
                      const MigrationConfig& config);
 
     void Run();

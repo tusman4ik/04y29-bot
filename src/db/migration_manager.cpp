@@ -15,7 +15,7 @@
 
 namespace bot {
 
-MigrationConfig::MigrationConfig(const std::shared_ptr<EnvManager>& env_manager)
+MigrationConfig::MigrationConfig(const std::shared_ptr<IEnvManager>& env_manager)
     : create_version_table(env_manager->Get("CREATE_VERSION_TABLE")),
       get_current_version(env_manager->Get("GET_CURRENT_VERSION")),
       migrations_dir(env_manager->Get("MIGRATIONS_DIR")),
@@ -23,13 +23,13 @@ MigrationConfig::MigrationConfig(const std::shared_ptr<EnvManager>& env_manager)
       check_migration_hash(env_manager->Get("CHECK_MIGRATION_HASH")) {}
 
 MigrationManager::MigrationManager(const std::shared_ptr<SQLite::Database>& db,
-                                   const std::shared_ptr<QueriesManager>& queries_manager,
+                                   const std::shared_ptr<IQueriesManager>& queries_manager,
                                    const MigrationConfig& config)
     : db_(db), queries_manager_(queries_manager), config_(config) {}
 
 void ApplyMigrations(DiContainer& ctx) {
-    MigrationManager(GET(ctx, SQLite::Database), GET(ctx, QueriesManager),
-                     MigrationConfig(GET(ctx, EnvManager)))
+    MigrationManager(GET(ctx, SQLite::Database), GET(ctx, IQueriesManager),
+                     MigrationConfig(GET(ctx, IEnvManager)))
         .Run();
 }
 

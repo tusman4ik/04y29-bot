@@ -39,7 +39,7 @@ void Bootstraper::StepOneLoggerSetup() {
 
 void Bootstraper::StepTwoCheckAllTokens() {
     spdlog::info("Bootstrap. Stage 2");
-    REGISTER(ctx_, EnvManager);
+    REGISTER_I(ctx_, IEnvManager, EnvManager);
 }
 
 void Bootstraper::StepThreeInitDatabase() {
@@ -54,7 +54,7 @@ void Bootstraper::StepFourInitTgBot() {
 
 void Bootstraper::StepFiveLoadSqlScripts() {
     spdlog::info("Bootstrap. Stage 5");
-    REGISTER(ctx_, QueriesManager, GET_ENV(ctx_, "SQL_DIR"));
+    REGISTER_I(ctx_, IQueriesManager, QueriesManager, GET_ENV(ctx_, "SQL_DIR"));
 }
 
 void Bootstraper::StepSixRunMigrations() {

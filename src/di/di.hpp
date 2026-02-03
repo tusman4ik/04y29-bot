@@ -17,6 +17,10 @@ namespace bot {
     di.Register<type>(          \
         [&](DiContainer& di) { return std::make_shared<type>(__VA_ARGS__); })
 
+#define REGISTER_I(di, interface, type, ...) \
+    di.Register<interface>(                  \
+        [&](DiContainer& di) { return std::make_shared<type>(__VA_ARGS__); })
+
 class DiContainer {
 private:
     std::map<std::string, std::shared_ptr<void>> instances_;
