@@ -16,10 +16,10 @@ Env tokens[] = {{"BOT_TOKEN", false},
                 {"GOOGLE_SHEETS_API_KEY", false},
                 {"SQL_DIR", true, "sql"},
                 {"MIGRATIONS_DIR", true, "migrations"},
-                {"CREATE_VERSION_TABLE", true, "create_version_table.sql"},
-                {"GET_CURRENT_VERSION", true, "get_current_version.sql"},
-                {"INSERT_VERSION_RECORD", true, "insert_version_record.sql"},
-                {"CHECK_MIGRATION_HASH", true, "check_migration_hash.sql"}
+                {"CREATE_VERSION_TABLE", true, "internal/create_version_table.sql"},
+                {"GET_CURRENT_VERSION", true, "internal/get_current_version.sql"},
+                {"INSERT_VERSION_RECORD", true, "internal/insert_version_record.sql"},
+                {"CHECK_MIGRATION_HASH", true, "internal/check_migration_hash.sql"}
 
 };
 
