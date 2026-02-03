@@ -1,13 +1,25 @@
 #pragma once
 
+#include "env/env_manager.hpp"    // NOLINT:
 #include <functional>
-#include <iostream>
 #include <map>
 #include <memory>
-#include <stdexcept>
+#include <spdlog/spdlog.h>
 #include <string>
 
-namespace di {
+namespace bot {
+
+#define GET(di, type) di.Get<type>()
+
+#define GET_ENV(di, name) di.Get<IEnvManager>()->Get(name)
+
+#define REGISTER(di, type, ...) \
+    di.Register<type>(          \
+        [&](DiContainer& di) { return std::make_shared<type>(__VA_ARGS__); })
+
+#define REGISTER_I(di, interface, type, ...) \
+    di.Register<interface>(                  \
+        [&](DiContainer& di) { return std::make_shared<type>(__VA_ARGS__); })
 
 class DiContainer {
 private:
@@ -15,8 +27,7 @@ private:
     std::map<std::string, std::function<std::shared_ptr<void>(DiContainer&)>> factories_;
 
 public:
-    template <typename T>
-    std::shared_ptr<T> Get(const std::string& name) {
+    template <typename T> std::shared_ptr<T> Get(const std::string& name) {
         if (instances_.find(name) != instances_.end()) {
 
             return std::static_pointer_cast<T>(instances_.at(name));
@@ -33,14 +44,15 @@ public:
         return std::static_pointer_cast<T>(instance);
     }
 
-    template <typename T>
-    std::shared_ptr<T> Get() {
+    template <typename T> std::shared_ptr<T> Get() {
         std::string name = typeid(T).name();
         return Get<T>(name);
     }
 
     template <typename T>
-    void Register(const std::string& name, std::function<std::shared_ptr<void>(DiContainer&)> factory_method) {
+    void Register(const std::string& name,
+                  std::function<std::shared_ptr<void>(DiContainer&)> factory_method) {
+
         if (factories_.find(name) != factories_.end()) {
             throw std::runtime_error("Type with name (" + name + ") already exists");
         }
@@ -54,8 +66,7 @@ public:
     }
 };
 
-template <typename T>
-struct Scoped {
+template <typename T> struct Scoped {
 
     explicit Scoped(const std::shared_ptr<T>& ptr) : ptr(ptr) {}
 
@@ -65,13 +76,10 @@ struct Scoped {
     T& operator*() { return *ptr.get(); }
 };
 
-template <typename T>
-Scoped<T> Scope(DiContainer& c, std::string name) {
+template <typename T> Scoped<T> Scope(DiContainer& c, std::string name) {
     return Scoped<T>{c.Get<T>(name)};
 }
 
-template <typename T>
-Scoped<T> Scope(DiContainer& c) {
-    return Scoped<T>{c.Get<T>()};
-}
-}    // namespace di
+template <typename T> Scoped<T> Scope(DiContainer& c) { return Scoped<T>{c.Get<T>()}; }
+
+}    // namespace bot

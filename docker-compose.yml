@@ -1,7 +1,8 @@
 services:
-  04y29-bot:
+  core:
     build: .
-    container_name: instance
+    network_mode: "bridge"
     env_file: .env
-    volumes: 
-      - ./data:/app/data  
+    volumes:
+      - ./sql:/app/sql
+      - ./data:/app/data
