@@ -20,7 +20,7 @@ public:
     virtual ~IGoogleSheetsClient() = default;
 };
 
-class GoogleSheetsClient : public IGoogleSheetsClient {
+class GoogleSheetsClient final : public IGoogleSheetsClient {
 private:
     static constexpr const char* kRowUrl =
         "https://sheets.googleapis.com/v4/spreadsheets/{}/values/{}?key={}";
@@ -37,7 +37,7 @@ private:
     static std::string GetRange(const RequestParams& params);
     static size_t WriteCallback(void* contents, size_t size, size_t nmemb,
                                 std::string* userp);
-    void LogUrl(const std::string& url)const;
+    void LogUrl(const std::string& url) const;
 };
 
 }    // namespace bot
