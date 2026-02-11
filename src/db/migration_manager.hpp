@@ -13,20 +13,22 @@ namespace bot {
 struct Config {
     std::string migrations_dir = "migrations";
     std::string internal_dir = "internal";
-    std::string create_version_table = internal_dir +  "/create_version_table.sql";
-    std::string get_current_version = internal_dir +  "/get_current_version.sql";
-    std::string insert_version_record = internal_dir +  "/insert_version_record.sql";
-    std::string check_migration_hash = internal_dir +  "/check_migration_hash.sql";
+    std::string create_version_table = internal_dir + "/create_version_table.sql";
+    std::string get_current_version = internal_dir + "/get_current_version.sql";
+    std::string insert_version_record = internal_dir + "/insert_version_record.sql";
+    std::string check_migration_hash = internal_dir + "/check_migration_hash.sql";
 };
 
-class MigrationManager {
+class MigrationManager final {
 private:
     std::shared_ptr<SQLite::Database> db_;
     std::shared_ptr<IQueriesManager> queries_manager_;
     Config config_;
+
 public:
     MigrationManager(const std::shared_ptr<SQLite::Database>& db,
-                     const std::shared_ptr<IQueriesManager>& queries_manager, const Config config_);
+                     const std::shared_ptr<IQueriesManager>& queries_manager,
+                     const Config config_);
     void Run();
 
 private:

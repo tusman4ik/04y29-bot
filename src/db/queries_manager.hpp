@@ -17,7 +17,7 @@ public:
     virtual ~IQueriesManager() = default;
 };
 
-class QueriesManager : public IQueriesManager {
+class QueriesManager final : public IQueriesManager {
 private:
     std::unordered_map<std::filesystem::path, std::string> storage_;
 

@@ -31,14 +31,15 @@ void MigrationManager::Run() {
 
     std::vector<std::filesystem::path> migrations =
         queries_manager_->ListSubdirFiles(config_.migrations_dir);
-    
-    spdlog::debug("Database current version = {}. Migrations amount = {}", current_version, migrations.size());
+
+    spdlog::debug("Database current version = {}. Migrations amount = {}",
+                  current_version, migrations.size());
     std::hash<std::string> hash;
 
     for (const auto& path : migrations) {
         std::string script = queries_manager_->Get(
             std::filesystem::path(config_.migrations_dir) / path.string());
-        
+
         int32_t version = GetVersion(path);
         size_t script_hash = hash(script);
         std::string formated_hash = std::format("{:016x}", script_hash);

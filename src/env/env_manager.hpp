@@ -11,7 +11,7 @@ public:
     virtual ~IEnvManager() = default;
 };
 
-class EnvManager : public IEnvManager {
+class EnvManager final : public IEnvManager {
 private:
     std::unordered_map<std::string, std::string> storage_;
 
